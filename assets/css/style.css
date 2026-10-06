@@ -450,3 +450,16 @@ h2 { font-size: var(--text-base); line-height: 1.2; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---- Hide injected hosting-platform badge (e.g. Netlify "Powered by") ---- */
+#netlify-badge,
+.netlify-badge,
+[class*="netlify-badge"],
+[id*="netlify-badge"],
+a[href^="https://www.netlify.com"][target="_blank"],
+a[href*="netlify.com/?utm"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
