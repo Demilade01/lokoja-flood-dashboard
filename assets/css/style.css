@@ -451,15 +451,19 @@ h2 { font-size: var(--text-base); line-height: 1.2; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-/* ---- Hide injected hosting-platform badge (e.g. Netlify "Powered by") ---- */
+/* ==========================================================
+   HIDE INJECTED "Powered by Netlify" badge / deploy drawer
+   ========================================================== */
 #netlify-badge,
 .netlify-badge,
 [class*="netlify-badge"],
 [id*="netlify-badge"],
-a[href^="https://www.netlify.com"][target="_blank"],
-a[href*="netlify.com/?utm"] {
+[data-netlify-badge],
+a[href*="netlify.com"][target="_blank"],
+a[href*="netlify.app"][target="_blank"],
+iframe[src*="netlify"],
+iframe[title*="Netlify" i] {
   display: none !important;
   visibility: hidden !important;
-  opacity: 0 !important;
   pointer-events: none !important;
 }
