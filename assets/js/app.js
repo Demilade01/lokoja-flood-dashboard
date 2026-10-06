@@ -29,16 +29,18 @@
   // ---------- State ----------
   const state = {
     selected: 'july15', // default to peak flooding observation per acceptance criteria
-    layers: { flood: true, boundary: true, towns: true, buildings: true, basemap: true },
+    layers: { flood: true, boundary: true, towns: true, buildings: true, roads: true, basemap: true },
     map: null,
     floodLayer: null,
     exposedLayer: null,
     boundaryLayer: null,
     townsLayer: null,
+    roadsLayer: null,
     basemapLayer: null,
     summary: null,
     townsData: null,
     exposureData: null,
+    roadsData: null,
     eventData: {},
     weather: null,
     weatherTimer: null
@@ -97,6 +99,83 @@
     return Boolean(feature.properties[state.selected]);
   }
 
+  // ---------- Road / bridge safety screening ----------
+  // Ray-casting point-in-ring test (coords are [lng, lat]).
+  function pointInRing(lng, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1];
+      const xj = ring[j][0], yj = ring[j][1];
+      if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  // A single Polygon = [outerRing, hole1, hole2, ...]: inside outer AND outside every hole.
+  function pointInPolygon(lng, lat, rings) {
+    if (!rings.length || !pointInRing(lng, lat, rings[0])) return false;
+    for (let h = 1; h < rings.length; h++) {
+      if (pointInRing(lng, lat, rings[h])) return false; // sits in a hole
+    }
+    return true;
+  }
+
+  // Works for both Polygon and MultiPolygon geometries.
+  function pointInFlood(lng, lat, geometry) {
+    if (!geometry) return false;
+    if (geometry.type === 'Polygon') {
+      return pointInPolygon(lng, lat, geometry.coordinates);
+    }
+    if (geometry.type === 'MultiPolygon') {
+      return geometry.coordinates.some(poly => pointInPolygon(lng, lat, poly));
+    }
+    return false;
+  }
+
+  // Is a checkpoint inside the CURRENTLY SELECTED event's flood polygon? -> dangerous.
+  function isDangerous(lng, lat) {
+    const flood = state.eventData[state.selected];
+    if (!flood || !Array.isArray(flood.features)) return false;
+    return flood.features.some(f => pointInFlood(lng, lat, f.geometry));
+  }
+
+  // Build the road/bridge checkpoint layer, coloured for the selected observation.
+  function buildRoadsLayer() {
+    const DANGER = '#d6273a', SAFE = '#1f6fd6';
+    return L.geoJSON(state.roadsData, {
+      pointToLayer: (feature, latlng) => {
+        const danger = isDangerous(latlng.lng, latlng.lat);
+        const isBridge = feature.properties.kind === 'bridge';
+        return L.circleMarker(latlng, {
+          radius: isBridge ? 7 : 6,
+          color: '#ffffff',
+          weight: 1.6,
+          fillColor: danger ? DANGER : SAFE,
+          fillOpacity: 0.95
+        });
+      },
+      onEachFeature: (feature, layer) => {
+        const danger = isDangerous(
+          feature.geometry.coordinates[0], feature.geometry.coordinates[1]
+        );
+        const meta = EVENTS[state.selected];
+        const name = escapeHTML(feature.properties.name || 'Checkpoint');
+        const kind = feature.properties.kind === 'bridge' ? 'Bridge' : 'Road';
+        layer.bindTooltip(name, { direction: 'top', offset: [0, -8], className: 'town-label' });
+        layer.bindPopup(
+          `<strong>${name}</strong><br>`
+          + `Feature: ${kind} checkpoint<br>`
+          + `Observation: ${escapeHTML(meta.date)}<br>`
+          + `Status: <strong style="color:${danger ? DANGER : SAFE}">`
+          + `${danger ? 'DANGEROUS — within mapped water' : 'SAFE — outside mapped water'}</strong><br>`
+          + `<em>Spatial screening against this date's flood polygon — not a verified road-closure feed.</em>`
+        );
+      }
+    });
+  }
+
   // ---------- Draw active flood + exposure layers ----------
   function drawEvent(fit = false) {
     const meta = EVENTS[state.selected];
@@ -136,6 +215,13 @@
       }
     });
     if (state.layers.buildings) state.exposedLayer.addTo(state.map);
+
+    // Road / bridge safety checkpoints — recoloured for the selected observation
+    if (state.roadsLayer) state.map.removeLayer(state.roadsLayer);
+    if (state.roadsData) {
+      state.roadsLayer = buildRoadsLayer();
+      if (state.layers.roads) state.roadsLayer.addTo(state.map);
+    }
 
     updateMetrics();
     updateMapOverlays();
@@ -208,6 +294,7 @@
     state.boundaryLayer && (state.layers.boundary ? state.boundaryLayer.addTo(state.map)  : state.map.removeLayer(state.boundaryLayer));
     state.townsLayer   && (state.layers.towns     ? state.townsLayer.addTo(state.map)     : state.map.removeLayer(state.townsLayer));
     state.exposedLayer && (state.layers.buildings ? state.exposedLayer.addTo(state.map)   : state.map.removeLayer(state.exposedLayer));
+    state.roadsLayer   && (state.layers.roads     ? state.roadsLayer.addTo(state.map)     : state.map.removeLayer(state.roadsLayer));
     if (state.basemapLayer) {
       if (state.layers.basemap) state.map.addLayer(state.basemapLayer);
       else state.map.removeLayer(state.basemapLayer);
@@ -248,11 +335,12 @@
 
   // ---------- Load all data (shared by initMap and refreshAll) ----------
   async function loadData() {
-    const [summary, boundary, towns, exposure, ...events] = await Promise.all([
+    const [summary, boundary, towns, exposure, roads, ...events] = await Promise.all([
       fetchJSON('./data/summary.json'),
       fetchJSON('./data/boundary.geojson'),
       fetchJSON('./data/towns.geojson'),
       fetchJSON('./data/exposed-buildings.geojson'),
+      fetchJSON('./data/road-points.geojson'),
       ...ORDER.map(id => fetchJSON(EVENTS[id].file))
     ]);
 
@@ -260,13 +348,14 @@
     if (!summary || !Array.isArray(summary.events) || summary.events.length !== 3) {
       throw new Error('summary.json is missing the expected events array.');
     }
-    [boundary, towns, exposure, ...events].forEach((d, i) => {
+    [boundary, towns, exposure, roads, ...events].forEach((d, i) => {
       if (!isValidGeoJSON(d)) throw new Error(`Invalid GeoJSON for dataset index ${i}`);
     });
 
     state.summary = summary;
     state.townsData = towns;
     state.exposureData = exposure;
+    state.roadsData = roads;
     ORDER.forEach((key, i) => { state.eventData[key] = events[i]; });
 
     return { boundary, towns };

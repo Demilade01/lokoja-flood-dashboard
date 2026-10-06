@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://api.open-meteo.com">
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=jet-brains-mono@400,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
-  <script src="./app.js" defer></script>
+  <script src="./assets/js/app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#map">Skip to map</a>
@@ -61,6 +61,7 @@
           <li><label class="toggle"><input type="checkbox" data-layer="boundary" checked><span class="toggle-track"></span><span class="toggle-label">Study-area boundary</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="towns" checked><span class="toggle-track"></span><span class="toggle-label">Settlement locations</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="buildings" checked><span class="toggle-track"></span><span class="toggle-label">Potentially exposed buildings</span></label></li>
+          <li><label class="toggle"><input type="checkbox" data-layer="roads" checked><span class="toggle-track"></span><span class="toggle-label">Road &amp; bridge safety checkpoints</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="basemap" checked><span class="toggle-track"></span><span class="toggle-label">OpenStreetMap basemap</span></label></li>
         </ul>
       </section>
@@ -117,6 +118,8 @@
         <div class="legend-title">Legend</div>
         <div><i id="legend-flood" aria-hidden="true"></i><span>Mapped water</span></div>
         <div><i class="legend-building" aria-hidden="true"></i><span>Potentially exposed building</span></div>
+        <div><i class="legend-danger" aria-hidden="true"></i><span>Dangerous checkpoint (within mapped water)</span></div>
+        <div><i class="legend-safe" aria-hidden="true"></i><span>Safe checkpoint (outside mapped water)</span></div>
         <div><i class="legend-town" aria-hidden="true"></i><span>Settlement</span></div>
         <div><i class="legend-boundary" aria-hidden="true"></i><span>Study-area boundary</span></div>
         <div><i class="legend-basemap" aria-hidden="true"></i><span>OpenStreetMap basemap</span></div>

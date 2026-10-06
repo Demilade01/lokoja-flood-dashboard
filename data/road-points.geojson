@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "note": "Illustrative road and bridge checkpoints across the Lokoja study area. Locations are indicative, not surveyed road geometry. Safe/dangerous status is NOT stored here: it is computed in the browser per selected observation as whether the checkpoint falls inside that date's mapped flood polygon (dangerous) or outside it (safe). Spatial screening, not a verified road-closure feed.",
+  "features": [
+    {"type":"Feature","properties":{"name":"Lokoja Town Centre","kind":"road"},"geometry":{"type":"Point","coordinates":[6.733333,7.800000]}},
+    {"type":"Feature","properties":{"name":"Lokoja-Atakpa Rd (west)","kind":"road"},"geometry":{"type":"Point","coordinates":[6.750000,7.794400]}},
+    {"type":"Feature","properties":{"name":"Lokoja-Atakpa Rd (mid)","kind":"road"},"geometry":{"type":"Point","coordinates":[6.766700,7.788900]}},
+    {"type":"Feature","properties":{"name":"Atakpa Junction","kind":"road"},"geometry":{"type":"Point","coordinates":[6.783333,7.783333]}},
+    {"type":"Feature","properties":{"name":"Atakpa-Kpatakpoli Rd","kind":"road"},"geometry":{"type":"Point","coordinates":[6.791700,7.775000]}},
+    {"type":"Feature","properties":{"name":"Kpatakpoli Approach","kind":"road"},"geometry":{"type":"Point","coordinates":[6.800000,7.766667]}},
+    {"type":"Feature","properties":{"name":"Lokoja-Numai Rd (south)","kind":"road"},"geometry":{"type":"Point","coordinates":[6.746700,7.807200]}},
+    {"type":"Feature","properties":{"name":"Lokoja-Numai Rd (north)","kind":"road"},"geometry":{"type":"Point","coordinates":[6.759400,7.814400]}},
+    {"type":"Feature","properties":{"name":"Numai Junction","kind":"road"},"geometry":{"type":"Point","coordinates":[6.772094,7.821625]}},
+    {"type":"Feature","properties":{"name":"Eastern Ring Rd","kind":"road"},"geometry":{"type":"Point","coordinates":[6.795000,7.795000]}},
+    {"type":"Feature","properties":{"name":"Southern Bypass","kind":"road"},"geometry":{"type":"Point","coordinates":[6.770000,7.770000]}},
+    {"type":"Feature","properties":{"name":"Confluence Bridge","kind":"bridge"},"geometry":{"type":"Point","coordinates":[6.760000,7.800000]}},
+    {"type":"Feature","properties":{"name":"Benue Approach Bridge","kind":"bridge"},"geometry":{"type":"Point","coordinates":[6.785000,7.810000]}},
+    {"type":"Feature","properties":{"name":"Riverside Causeway","kind":"bridge"},"geometry":{"type":"Point","coordinates":[6.775000,7.792000]}}
+  ]
+}
