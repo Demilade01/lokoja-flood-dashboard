@@ -171,21 +171,6 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "Unnamed road",
-    "kind": "road",
-    "danger": []
-   },
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     6.74074,
-     7.76778
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "properties": {
     "name": "Plaza Hotel Road",
     "kind": "road",
     "danger": []
@@ -208,23 +193,25 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     6.72984,
-     7.78613
+     6.72023,
+     7.79169
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "name": "Unnamed road",
+    "name": "A233 / Obasanjo Way (sharp turn)",
     "kind": "road",
-    "danger": []
+    "danger": [
+     "july15"
+    ]
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
-     6.72023,
-     7.79169
+     6.74649,
+     7.81046
     ]
    }
   }
