@@ -35,12 +35,14 @@
     exposedLayer: null,
     boundaryLayer: null,
     townsLayer: null,
+    roadLinesLayer: null,
     roadsLayer: null,
     basemapLayer: null,
     summary: null,
     townsData: null,
     exposureData: null,
     roadsData: null,
+    roadLinesData: null,
     eventData: {},
     weather: null,
     weatherTimer: null
@@ -134,11 +136,26 @@
     return false;
   }
 
-  // Is a checkpoint inside the CURRENTLY SELECTED event's flood polygon? -> dangerous.
-  function isDangerous(lng, lat) {
+  // Is a checkpoint dangerous for the CURRENTLY SELECTED event?
+  // Per-road classification: if the feature carries a `danger` array of event ids
+  // (a road that enters the flood on those dates), honour it so EVERY checkpoint on
+  // a flooded road is red. Fall back to point-in-polygon for features without it.
+  function isDangerous(feature) {
+    const d = feature && feature.properties && feature.properties.danger;
+    if (Array.isArray(d)) return d.includes(state.selected);
+    const [lng, lat] = feature.geometry.coordinates;
     const flood = state.eventData[state.selected];
     if (!flood || !Array.isArray(flood.features)) return false;
     return flood.features.some(f => pointInFlood(lng, lat, f.geometry));
+  }
+
+  // Style a road line for the selected event: red if it floods on this date, else neutral.
+  function roadLineStyle(feature) {
+    const d = feature && feature.properties && feature.properties.danger;
+    const danger = Array.isArray(d) && d.includes(state.selected);
+    return danger
+      ? { color: '#d6273a', weight: 2.4, opacity: 0.85 }
+      : { color: '#8a6d3b', weight: 1.5, opacity: 0.5 };
   }
 
   // Build the road/bridge checkpoint layer, coloured for the selected observation.
@@ -146,7 +163,7 @@
     const DANGER = '#d6273a', SAFE = '#1f6fd6';
     return L.geoJSON(state.roadsData, {
       pointToLayer: (feature, latlng) => {
-        const danger = isDangerous(latlng.lng, latlng.lat);
+        const danger = isDangerous(feature);
         const isBridge = feature.properties.kind === 'bridge';
         return L.circleMarker(latlng, {
           radius: isBridge ? 7 : 6,
@@ -157,9 +174,7 @@
         });
       },
       onEachFeature: (feature, layer) => {
-        const danger = isDangerous(
-          feature.geometry.coordinates[0], feature.geometry.coordinates[1]
-        );
+        const danger = isDangerous(feature);
         const meta = EVENTS[state.selected];
         const name = escapeHTML(feature.properties.name || 'Checkpoint');
         const kind = feature.properties.kind === 'bridge' ? 'Bridge' : 'Road';
@@ -169,7 +184,7 @@
           + `Feature: ${kind} checkpoint<br>`
           + `Observation: ${escapeHTML(meta.date)}<br>`
           + `Status: <strong style="color:${danger ? DANGER : SAFE}">`
-          + `${danger ? 'DANGEROUS — within mapped water' : 'SAFE — outside mapped water'}</strong><br>`
+          + `${danger ? 'DANGER — route leads into mapped water (do not pass)' : 'SAFE — route clear of mapped water (safe to pass)'}</strong><br>`
           + `<em>Spatial screening against this date's flood polygon — not a verified road-closure feed.</em>`
         );
       }
@@ -215,6 +230,15 @@
       }
     });
     if (state.layers.buildings) state.exposedLayer.addTo(state.map);
+
+    // Road network lines sit beneath the checkpoints — restyle for this event, re-add first
+    if (state.roadLinesLayer) {
+      state.roadLinesLayer.setStyle(roadLineStyle);
+      if (state.layers.roads) {
+        state.roadLinesLayer.addTo(state.map);
+        if (state.roadLinesLayer.bringToBack) state.roadLinesLayer.bringToBack();
+      }
+    }
 
     // Road / bridge safety checkpoints — recoloured for the selected observation
     if (state.roadsLayer) state.map.removeLayer(state.roadsLayer);
@@ -294,6 +318,7 @@
     state.boundaryLayer && (state.layers.boundary ? state.boundaryLayer.addTo(state.map)  : state.map.removeLayer(state.boundaryLayer));
     state.townsLayer   && (state.layers.towns     ? state.townsLayer.addTo(state.map)     : state.map.removeLayer(state.townsLayer));
     state.exposedLayer && (state.layers.buildings ? state.exposedLayer.addTo(state.map)   : state.map.removeLayer(state.exposedLayer));
+    state.roadLinesLayer && (state.layers.roads   ? state.roadLinesLayer.addTo(state.map) : state.map.removeLayer(state.roadLinesLayer));
     state.roadsLayer   && (state.layers.roads     ? state.roadsLayer.addTo(state.map)     : state.map.removeLayer(state.roadsLayer));
     if (state.basemapLayer) {
       if (state.layers.basemap) state.map.addLayer(state.basemapLayer);
@@ -335,12 +360,13 @@
 
   // ---------- Load all data (shared by initMap and refreshAll) ----------
   async function loadData() {
-    const [summary, boundary, towns, exposure, roads, ...events] = await Promise.all([
+    const [summary, boundary, towns, exposure, roads, roadLines, ...events] = await Promise.all([
       fetchJSON('./data/summary.json'),
       fetchJSON('./data/boundary.geojson'),
       fetchJSON('./data/towns.geojson'),
       fetchJSON('./data/exposed-buildings.geojson'),
       fetchJSON('./data/road-points.geojson'),
+      fetchJSON('./data/roads.geojson'),
       ...ORDER.map(id => fetchJSON(EVENTS[id].file))
     ]);
 
@@ -348,7 +374,7 @@
     if (!summary || !Array.isArray(summary.events) || summary.events.length !== 3) {
       throw new Error('summary.json is missing the expected events array.');
     }
-    [boundary, towns, exposure, roads, ...events].forEach((d, i) => {
+    [boundary, towns, exposure, roads, roadLines, ...events].forEach((d, i) => {
       if (!isValidGeoJSON(d)) throw new Error(`Invalid GeoJSON for dataset index ${i}`);
     });
 
@@ -356,6 +382,7 @@
     state.townsData = towns;
     state.exposureData = exposure;
     state.roadsData = roads;
+    state.roadLinesData = roadLines;
     ORDER.forEach((key, i) => { state.eventData[key] = events[i]; });
 
     return { boundary, towns };
@@ -381,6 +408,19 @@
       state.boundaryLayer.bindPopup('<strong>Study-area boundary</strong><br>Supplied reference GIS data.<br>Defines the area of interest for flood observation.');
 
       state.townsLayer = L.geoJSON(towns, { pointToLayer: townMarker });
+
+      // Road network lines (OSM) — the base that checkpoints sit on.
+      // Flooded roads (danger array includes the selected event) render red.
+      if (state.roadLinesData) {
+        state.roadLinesLayer = L.geoJSON(state.roadLinesData, {
+          style: roadLineStyle,
+          onEachFeature: (feature, layer) => {
+            const nm = escapeHTML(feature.properties.name || 'Road');
+            layer.bindPopup(`<strong>${nm}</strong><br>Road (OpenStreetMap)`);
+          }
+        });
+        if (state.layers.roads) state.roadLinesLayer.addTo(state.map);
+      }
 
       drawEvent(false);
       // Fit to boundary so all dates show consistent framing
@@ -423,7 +463,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg> Next observation';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg> Refresh';
       }
     }
   }
@@ -520,6 +560,15 @@
 
     // Weather refresh
     $('#weather-refresh').addEventListener('click', loadWeather);
+
+    // Legend collapse / expand
+    const legendToggle = $('#legend-toggle');
+    if (legendToggle) {
+      legendToggle.addEventListener('click', () => {
+        const expanded = legendToggle.getAttribute('aria-expanded') === 'true';
+        legendToggle.setAttribute('aria-expanded', String(!expanded));
+      });
+    }
   }
 
   // ---------- Boot ----------

@@ -236,10 +236,26 @@ h2 { font-size: var(--text-base); line-height: 1.2; }
   border-radius: var(--radius-lg); padding: var(--space-3);
   display: grid; gap: var(--space-2); font-size: var(--text-xs); min-width: 200px;
 }
-.legend-title { font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: var(--space-1); font-size: 10px; }
-.legend div { display: flex; align-items: center; gap: var(--space-2); }
+.legend-title {
+  font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+  font-size: 10px; font-family: inherit;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: pointer;
+}
+.legend-chevron { transition: transform .2s ease; flex-shrink: 0; }
+.legend-title[aria-expanded="false"] .legend-chevron { transform: rotate(-90deg); }
+.legend-body {
+  display: grid; gap: var(--space-2); margin-top: var(--space-1);
+  overflow: hidden; max-height: 320px; opacity: 1;
+  transition: max-height .25s ease, opacity .2s ease, margin-top .25s ease;
+}
+.legend-title[aria-expanded="false"] + .legend-body {
+  max-height: 0; opacity: 0; margin-top: 0;
+}
+.legend-body div { display: flex; align-items: center; gap: var(--space-2); }
 .legend i { width: 18px; height: 11px; border-radius: 3px; background: #178b8b; flex-shrink: 0; }
 .legend .legend-building { width: 8px; height: 8px; border-radius: 50%; background: var(--exposure); border: 1px solid #684900; }
+.legend .legend-road { width: 18px; height: 3px; border-radius: 2px; background: #8a6d3b; opacity: .7; }
 .legend .legend-town { width: 9px; height: 9px; border-radius: 50%; background: var(--text); border: 2px solid var(--surface-2); }
 .legend .legend-danger { width: 10px; height: 10px; border-radius: 50%; background: #d6273a; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
 .legend .legend-safe { width: 10px; height: 10px; border-radius: 50%; background: #1f6fd6; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
@@ -440,7 +456,7 @@ h2 { font-size: var(--text-base); line-height: 1.2; }
   .weather-current { grid-template-columns: 1fr 1fr; }
   .weather-current div:last-child { grid-column: 1 / -1; }
   .legend { max-width: 200px; }
-  .legend div:nth-child(2) { display: none; }
+  .legend-body div:nth-child(1) { display: none; }
   .map-title { left: var(--space-3); top: var(--space-3); }
   .map-button { right: var(--space-3); bottom: var(--space-3); }
   .comparison-table { font-size: 12px; }

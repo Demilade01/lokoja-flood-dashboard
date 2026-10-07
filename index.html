@@ -48,7 +48,7 @@
       <section class="refresh-control">
         <button id="refresh-all" class="ghost-button refresh-all-btn" type="button">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-          Next observation
+          Refresh
         </button>
       </section>
 
@@ -61,7 +61,7 @@
           <li><label class="toggle"><input type="checkbox" data-layer="boundary" checked><span class="toggle-track"></span><span class="toggle-label">Study-area boundary</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="towns" checked><span class="toggle-track"></span><span class="toggle-label">Settlement locations</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="buildings" checked><span class="toggle-track"></span><span class="toggle-label">Potentially exposed buildings</span></label></li>
-          <li><label class="toggle"><input type="checkbox" data-layer="roads" checked><span class="toggle-track"></span><span class="toggle-label">Road &amp; bridge safety checkpoints</span></label></li>
+          <li><label class="toggle"><input type="checkbox" data-layer="roads" checked><span class="toggle-track"></span><span class="toggle-label">Roads &amp; safe/danger checkpoints</span></label></li>
           <li><label class="toggle"><input type="checkbox" data-layer="basemap" checked><span class="toggle-track"></span><span class="toggle-label">OpenStreetMap basemap</span></label></li>
         </ul>
       </section>
@@ -115,14 +115,20 @@
     <section class="map-panel" aria-label="Interactive flood map">
       <div id="map" role="application" aria-label="Map of Lokoja flood extent"></div>
       <div class="map-overlay legend" aria-label="Map legend">
-        <div class="legend-title">Legend</div>
-        <div><i id="legend-flood" aria-hidden="true"></i><span>Mapped water</span></div>
-        <div><i class="legend-building" aria-hidden="true"></i><span>Potentially exposed building</span></div>
-        <div><i class="legend-danger" aria-hidden="true"></i><span>Dangerous checkpoint (within mapped water)</span></div>
-        <div><i class="legend-safe" aria-hidden="true"></i><span>Safe checkpoint (outside mapped water)</span></div>
-        <div><i class="legend-town" aria-hidden="true"></i><span>Settlement</span></div>
-        <div><i class="legend-boundary" aria-hidden="true"></i><span>Study-area boundary</span></div>
-        <div><i class="legend-basemap" aria-hidden="true"></i><span>OpenStreetMap basemap</span></div>
+        <button class="legend-title" type="button" id="legend-toggle" aria-expanded="true" aria-controls="legend-body">
+          <span>Legend</span>
+          <svg class="legend-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="legend-body" id="legend-body">
+          <div><i id="legend-flood" aria-hidden="true"></i><span>Mapped water</span></div>
+          <div><i class="legend-building" aria-hidden="true"></i><span>Potentially exposed building</span></div>
+          <div><i class="legend-road" aria-hidden="true"></i><span>Road (OpenStreetMap)</span></div>
+          <div><i class="legend-danger" aria-hidden="true"></i><span>Danger route — leads into flood (do not pass)</span></div>
+          <div><i class="legend-safe" aria-hidden="true"></i><span>Safe route — clear of flood (safe to pass)</span></div>
+          <div><i class="legend-town" aria-hidden="true"></i><span>Settlement</span></div>
+          <div><i class="legend-boundary" aria-hidden="true"></i><span>Study-area boundary</span></div>
+          <div><i class="legend-basemap" aria-hidden="true"></i><span>OpenStreetMap basemap</span></div>
+        </div>
       </div>
       <button id="fit-map" class="map-button" type="button" aria-label="Fit map to study area" title="Fit map to study area">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
